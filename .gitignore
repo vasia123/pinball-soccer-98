@@ -1,0 +1,30 @@
+# Крупные исходники/промежуточные артефакты — НЕ коммитим.
+# Деплой (docs/, включая docs/*.zip) — коммитим.
+
+# ISO и распаковка
+*.iso
+overlay.bin
+metadata.json
+demo_meta.json
+iso_extract/
+game_files/
+demo_ex/
+demo.zip
+
+# Промежуточные архивы BoxedWine (в docs/ лежит рабочая копия)
+boxedwine_web/
+boxedwine25R1.zip
+
+# Локальный Wine-префикс (~1.5 ГБ) и venv
+.wine-local/
+.wine-build/
+.venv/
+
+# Тестовый харнесс
+test-harness/node_modules/
+test-harness/shots/
+node_modules/
+
+# Прочее
+*.pak
+__pycache__/
