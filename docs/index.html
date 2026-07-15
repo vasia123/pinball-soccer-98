@@ -1,239 +1,156 @@
 <!doctype html>
 <html lang="ru">
+
 <head>
-<script src="coi-serviceworker.js"></script>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Soccer Pinball '98 — играть в браузере</title>
-<meta name="description" content="Dynamite Soccer Pinball '98 (Pin-Ball Games Ltd., 1998) — классический пинбол прямо в браузере. Ностальгия без установки.">
-<style>
-  :root{
-    --pitch:#1f7a3d; --pitch2:#2e9d52; --chrome:#d9dde3; --ink:#0c1017;
-    --neon:#ffcb2e; --neon2:#ff5a3c; --panel:#141a24; --panel2:#0d1219;
-    --line:rgba(255,255,255,.10);
-  }
-  *{box-sizing:border-box}
-  html,body{margin:0;padding:0}
-  body{
-    font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;
-    color:#e9edf3; background:
-      radial-gradient(1200px 700px at 50% -10%, #22314a 0%, #0b0f16 55%, #070a10 100%);
-    min-height:100vh; line-height:1.55;
-  }
-  .wrap{max-width:920px;margin:0 auto;padding:32px 20px 64px}
-  header{text-align:center;padding:22px 0 8px}
-  .kicker{letter-spacing:.32em;text-transform:uppercase;font-size:12px;color:#8fb0c9;margin-bottom:10px}
-  h1{
-    margin:0;font-weight:900;line-height:.95;
-    font-size:clamp(38px,9vw,84px);
-    background:linear-gradient(180deg,#fff 0%,#ffe08a 45%,#ff8a3c 100%);
-    -webkit-background-clip:text;background-clip:text;color:transparent;
-    text-shadow:0 2px 0 rgba(0,0,0,.25);
-    filter:drop-shadow(0 6px 18px rgba(255,120,40,.25));
-  }
-  .sub{margin:12px 0 0;color:#b9c6d6;font-size:clamp(15px,2.6vw,19px)}
-  .badge{display:inline-block;margin-top:14px;padding:5px 12px;border:1px solid var(--line);
-    border-radius:999px;font-size:12px;color:#9fd2ff;background:rgba(255,255,255,.03)}
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Soccer Pinball 98</title>
+  <style>
+    :root {
+      color-scheme: dark;
+    }
 
-  .stage{
-    margin:28px auto 0;max-width:760px;
-    border:1px solid var(--line);border-radius:18px;overflow:hidden;
-    background:linear-gradient(180deg,var(--panel),var(--panel2));
-    box-shadow:0 30px 80px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.05);
-  }
-  .marquee{
-    padding:16px 18px;display:flex;align-items:center;gap:14px;
-    background:
-      repeating-linear-gradient(90deg,rgba(255,255,255,.04) 0 2px,transparent 2px 10px),
-      linear-gradient(90deg,#12351f,#1f7a3d 50%,#12351f);
-    border-bottom:1px solid var(--line);
-  }
-  .ball{width:26px;height:26px;border-radius:50%;background:
-     radial-gradient(circle at 32% 30%, #fff, #cfd6df 35%, #7c8794 70%, #454c56);
-     box-shadow:0 2px 6px rgba(0,0,0,.5); flex:0 0 auto}
-  .marquee b{font-size:15px;letter-spacing:.06em}
-  .playfield{
-    position:relative;padding:34px 22px 30px;text-align:center;
-    background:
-      radial-gradient(600px 300px at 50% 120%, rgba(46,157,82,.30), transparent 70%),
-      radial-gradient(400px 200px at 50% -20%, rgba(90,140,220,.20), transparent 70%);
-  }
-  .play{
-    display:inline-flex;align-items:center;gap:14px;
-    font-size:clamp(20px,4.5vw,28px);font-weight:800;letter-spacing:.04em;
-    color:#12203a;text-decoration:none;
-    padding:18px 34px;border-radius:14px;border:none;cursor:pointer;
-    background:linear-gradient(180deg,#ffe27a,#ffb02e 60%,#ff7a1c);
-    box-shadow:0 10px 0 #a9540c, 0 18px 30px rgba(255,140,40,.35);
-    transition:transform .08s ease, box-shadow .08s ease;
-  }
-  .play:active{transform:translateY(6px);box-shadow:0 4px 0 #a9540c,0 10px 20px rgba(255,140,40,.3)}
-  .play .arrow{font-size:1.1em}
-  .hint{margin-top:16px;color:#93a4b7;font-size:13px}
-  .play[disabled]{opacity:.55;cursor:default;filter:saturate(.6)}
+    * {
+      box-sizing: border-box;
+    }
 
-  .loader{max-width:420px;margin:6px auto 0}
-  .loader[hidden]{display:none}
-  .bar{height:16px;border-radius:999px;overflow:hidden;
-    background:#0b1017;border:1px solid var(--line);box-shadow:inset 0 2px 6px rgba(0,0,0,.6)}
-  .fill{height:100%;width:0%;border-radius:999px;
-    background:linear-gradient(90deg,#ffe27a,#ffb02e 55%,#ff7a1c);
-    box-shadow:0 0 14px rgba(255,150,40,.5);
-    transition:width .25s ease}
-  .lstat{margin-top:10px;font-variant-numeric:tabular-nums;font-weight:700;
-    color:#ffd471;font-size:16px;display:flex;gap:10px;justify-content:center;align-items:center}
-  .lstat .dot{color:#5b6a7e}
-  .lmsg{margin-top:6px;color:#9fb0c2;font-size:13px}
-  .lmsg.err{color:#ff8a76}
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+    }
 
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:30px}
-  @media (max-width:640px){.grid{grid-template-columns:1fr}}
-  .card{border:1px solid var(--line);border-radius:14px;padding:18px 20px;
-    background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01))}
-  .card h3{margin:0 0 12px;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#ffd471}
-  .keys{display:flex;flex-direction:column;gap:10px}
-  .krow{display:flex;align-items:center;gap:12px;font-size:15px;color:#dbe4ee}
-  kbd{
-    font-family:inherit;font-weight:700;font-size:13px;color:#0c1017;
-    background:linear-gradient(180deg,#f4f6fa,#c8cfd8);
-    border-radius:7px;padding:6px 10px;min-width:44px;text-align:center;
-    box-shadow:0 2px 0 #7c8794, inset 0 1px 0 #fff;border:1px solid #aeb6c1}
-  .card p{margin:0;color:#aebccb;font-size:14px}
-  .card ul{margin:8px 0 0;padding-left:18px;color:#aebccb;font-size:14px}
-  .card li{margin:6px 0}
+    body {
+      background: #0a0e14;
+      color: #c8d0e0;
+      font-family: system-ui, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      padding: 12px;
+    }
 
-  footer{margin-top:36px;text-align:center;color:#7d8da0;font-size:13px;line-height:1.7}
-  footer a{color:#9fd2ff}
-  .disc{margin-top:14px;font-size:12px;color:#61728a;max-width:640px;margin-left:auto;margin-right:auto}
-</style>
+    h1 {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0;
+      letter-spacing: .5px;
+      color: #e8eefc;
+    }
+
+    #stage {
+      position: relative;
+      width: 640px;
+      max-width: 100%;
+      aspect-ratio: 4 / 3;
+      background: #000;
+      border: 1px solid #223;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 8px 40px rgba(0, 0, 0, .6);
+    }
+
+    #screen {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #screen canvas {
+      width: 100% !important;
+      height: 100% !important;
+      image-rendering: pixelated;
+    }
+
+    #loading {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      background: #0a0e14;
+      padding: 20px;
+      text-align: center;
+    }
+
+    #barwrap {
+      width: 70%;
+      height: 8px;
+      background: #1a2030;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    #bar {
+      width: 0;
+      height: 100%;
+      background: linear-gradient(90deg, #3a7bd5, #57d6a0);
+      transition: width .15s ease;
+    }
+
+    #status {
+      font-size: 13px;
+      color: #90a0c0;
+      max-width: 90%;
+    }
+
+    .controls {
+      font-size: 12px;
+      color: #708098;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 16px;
+      justify-content: center;
+      max-width: 640px;
+    }
+
+    .controls b {
+      color: #a8b6d0;
+      font-weight: 600;
+    }
+
+    kbd {
+      background: #1a2030;
+      border: 1px solid #2a3448;
+      border-bottom-width: 2px;
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-family: ui-monospace, monospace;
+      font-size: 11px;
+      color: #c8d0e0;
+    }
+  </style>
 </head>
+
 <body>
-<div class="wrap">
-  <header>
-    <div class="kicker">Pin-Ball Games Ltd. · 1998</div>
-    <h1>Soccer&nbsp;Pinball&nbsp;’98</h1>
-    <p class="sub">Легендарный футбольный пинбол эпохи Windows 98 — снова живой, прямо в браузере. Без установки, без дискет, без ностальгической тоски.</p>
-    <div class="badge">▶ Работает целиком у вас в браузере · ничего не отправляется на сервер</div>
-  </header>
-
-  <div class="stage">
-    <div class="marquee"><span class="ball"></span><b>DYNAMITE SOCCER PINBALL — TOURNAMENT TABLE</b></div>
-    <div class="playfield">
-      <button class="play" id="playBtn"><span class="arrow">▸</span> ИГРАТЬ</button>
-      <div class="loader" id="loader" hidden>
-        <div class="bar"><div class="fill" id="fill"></div></div>
-        <div class="lstat"><span id="pct">0%</span><span class="dot">·</span><span id="mb">0 / 0 МБ</span></div>
-        <div class="lmsg" id="lmsg">Загрузка движка и игры…</div>
+  <h1>⚽ Soccer Pinball 98</h1>
+  <div id="stage">
+    <div id="screen"></div>
+    <div id="loading">
+      <div id="barwrap">
+        <div id="bar"></div>
       </div>
-      <div class="hint" id="hint">Первая загрузка — около 70&nbsp;МБ (потом кэшируется браузером). После скачивания стол разворачивается ещё 1–2&nbsp;минуты — это разово, дальше игра идёт из памяти.</div>
+      <div id="status">Загрузка…</div>
+      <div class="controls" style="margin-top:8px">Кликните по экрану, чтобы включить звук</div>
     </div>
   </div>
-
-  <div class="grid">
-    <div class="card">
-      <h3>Управление</h3>
-      <div class="keys">
-        <div class="krow"><kbd>Z</kbd> левый флиппер</div>
-        <div class="krow"><kbd>Right&nbsp;Shift</kbd> правый флиппер</div>
-        <div class="krow"><kbd>Enter</kbd> запуск мяча (плунжер)</div>
-        <div class="krow"><kbd>Space</kbd> толчок стола вверх</div>
-        <div class="krow"><kbd>X</kbd> <span style="color:#5b6a7e">/</span> <kbd>/</kbd> толчок вправо / влево</div>
-      </div>
-      <p style="margin:12px 0 0;color:#7d8da0;font-size:12px">Клавиши можно переназначить в игре: OPTIONS → SETUP.</p>
-    </div>
-    <div class="card">
-      <h3>Как начать</h3>
-      <ul>
-        <li>Нажмите <b>ИГРАТЬ</b> и дождитесь загрузки.</li>
-        <li>Выберите язык (флаг) и нажмите <b>GO</b>.</li>
-        <li>В меню стола выберите разрешение/цвет и снова <b>GO</b>.</li>
-        <li>Ловите мяч флипперами. Кнопки в меню нажимайте с чуть удержанным кликом.</li>
-      </ul>
-    </div>
+  <div class="controls">
+    <span><b>Флипперы:</b> <kbd>Z</kbd> <kbd>⇧ Shift</kbd></span>
+    <span><b>Подача:</b> <kbd>Enter</kbd></span>
+    <span><b>Толчок:</b> <kbd>Space</kbd> <kbd>X</kbd> <kbd>/</kbd></span>
+    <span><b>Меню:</b> мышь</span>
   </div>
 
-  <footer>
-    <div>Оригинал: <b>Dynamite Soccer Pinball ’98</b> © 1998 Pin-Ball Games Ltd.</div>
-    <div>Запуск в браузере — на движке <a href="https://github.com/danoon2/Boxedwine" target="_blank" rel="noopener">BoxedWine</a> (Wine → WebAssembly).</div>
-    <p class="disc">Проект сделан для сохранения и ностальгии. Все права на игру принадлежат правообладателям. Если вы правообладатель и против размещения — свяжитесь, материал будет удалён.</p>
-  </footer>
-</div>
-
-<script>
-(function(){
-  var GAME_URL = 'boxedwine.html?app=pinball&p=winpin.bat&resolution=800x600&sound=true';
-  // Файлы, которые тянет эмулятор. Размеры — запасной вариант, если сервер не отдаёт Content-Length.
-  var ASSETS = [
-    { url: 'boxedwine.wasm', size: 2303715 },
-    { url: 'boxedwine.zip',  size: 37247698 },
-    { url: 'pinball.zip',    size: 33132474 }
-  ];
-  var btn = document.getElementById('playBtn');
-  var loader = document.getElementById('loader');
-  var fill = document.getElementById('fill');
-  var pct = document.getElementById('pct');
-  var mbEl = document.getElementById('mb');
-  var lmsg = document.getElementById('lmsg');
-  var hint = document.getElementById('hint');
-
-  function fmtMB(b){ return (b/1048576).toFixed(1); }
-  function go(){ window.location.href = GAME_URL; }
-
-  btn.addEventListener('click', function(){
-    // Если fetch/streams недоступны — просто переходим (эмулятор покажет свой спиннер).
-    if (!window.fetch || !window.ReadableStream) { go(); return; }
-    btn.disabled = true;
-    loader.hidden = false;
-    hint.textContent = 'Идёт загрузка. Не закрывайте вкладку — файлы кэшируются, повторный запуск будет мгновенным.';
-
-    var loaded = new Array(ASSETS.length).fill(0);
-    var totals = ASSETS.map(function(a){ return a.size; });
-
-    function render(){
-      var done = loaded.reduce(function(s,x){return s+x;},0);
-      var total = totals.reduce(function(s,x){return s+x;},0);
-      var p = total ? Math.min(100, Math.round(done/total*100)) : 0;
-      fill.style.width = p + '%';
-      pct.textContent = p + '%';
-      mbEl.textContent = fmtMB(done) + ' / ' + fmtMB(total) + ' МБ';
-    }
-
-    function loadOne(i){
-      var a = ASSETS[i];
-      return fetch(a.url, { cache: 'force-cache' }).then(function(resp){
-        if (!resp.ok) throw new Error(a.url + ' → HTTP ' + resp.status);
-        var len = parseInt(resp.headers.get('content-length') || '0', 10);
-        if (len) totals[i] = len;
-        if (!resp.body || !resp.body.getReader){
-          // нет стриминга — просто дочитаем целиком
-          return resp.arrayBuffer().then(function(buf){ loaded[i] = buf.byteLength; totals[i]=buf.byteLength; render(); });
-        }
-        var reader = resp.body.getReader();
-        return (function pump(){
-          return reader.read().then(function(r){
-            if (r.done) return;
-            loaded[i] += r.value.length;
-            render();
-            return pump();
-          });
-        })();
-      });
-    }
-
-    render();
-    Promise.all(ASSETS.map(function(_,i){ return loadOne(i); }))
-      .then(function(){
-        fill.style.width = '100%'; pct.textContent = '100%';
-        lmsg.textContent = 'Готово! Запускаем эмулятор…';
-        setTimeout(go, 500);
-      })
-      .catch(function(err){
-        lmsg.className = 'lmsg err';
-        lmsg.textContent = 'Ошибка загрузки: ' + err.message + '. Запускаем напрямую…';
-        setTimeout(go, 1500);
-      });
-  });
-})();
-</script>
+  <script type="module">
+    import { main } from './soccer.bundle.js';
+    main();
+  </script>
 </body>
+
 </html>

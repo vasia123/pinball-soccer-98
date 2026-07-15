@@ -28,6 +28,14 @@ test-harness/node_modules/
 test-harness/shots/
 node_modules/
 
+# Распакованный комплект игры (исходник для сборки docs/game — крупный, не коммитим)
+game_run/
+
+# Тестовые артефакты харнессов (скриншоты, логи прогонов)
+tools/*.png
+tools/*.txt
+tools/sndplay_stderr.txt
+
 # Прочее
 *.pak
 __pycache__/
