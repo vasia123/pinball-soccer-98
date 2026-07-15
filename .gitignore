@@ -14,6 +14,9 @@ demo.zip
 # Промежуточные архивы BoxedWine (в docs/ лежит рабочая копия)
 boxedwine_web/
 boxedwine25R1.zip
+boxedwine26R1.zip
+bw26_mt/
+bw_mt_test/
 
 # Локальный Wine-префикс (~1.5 ГБ) и venv
 .wine-local/
