@@ -8,6 +8,109 @@
     <meta name="keywords" content="emulator,wine,windows,x86,PC,emscripten,web assembly,wasm,boxedwine">
     <meta name="author" content="James Bryant, Kevin O'Dwyer">
       <link rel="stylesheet" type="text/css" href="boxedwine.css">
+    <style>
+      #bootOverlay{position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;
+        align-items:center;justify-content:center;gap:18px;
+        font-family:"Segoe UI",system-ui,Arial,sans-serif;color:#e9edf3;
+        background:radial-gradient(1000px 600px at 50% 0%,#22314a 0%,#0b0f16 55%,#070a10 100%);
+        transition:opacity .6s ease}
+      #bootOverlay.hide{opacity:0;pointer-events:none}
+      #bootOverlay .bt{font-weight:900;font-size:clamp(22px,4vw,34px);letter-spacing:.02em;
+        background:linear-gradient(180deg,#fff,#ffe08a 50%,#ff8a3c);-webkit-background-clip:text;
+        background-clip:text;color:transparent}
+      #bootOverlay .ball{width:34px;height:34px;border-radius:50%;
+        background:radial-gradient(circle at 32% 30%,#fff,#cfd6df 35%,#7c8794 70%,#454c56);
+        box-shadow:0 2px 8px rgba(0,0,0,.5);animation:bob 1.1s ease-in-out infinite}
+      @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+      #bootOverlay .track{width:min(420px,80vw);height:16px;border-radius:999px;overflow:hidden;
+        background:#0b1017;border:1px solid rgba(255,255,255,.12);box-shadow:inset 0 2px 6px rgba(0,0,0,.6);position:relative}
+      #bootOverlay .bar{height:100%;width:0%;border-radius:999px;
+        background:linear-gradient(90deg,#ffe27a,#ffb02e 55%,#ff7a1c);box-shadow:0 0 14px rgba(255,150,40,.5);
+        transition:width .3s ease}
+      #bootOverlay .track.indet .bar{width:35%!important;animation:slide 1.2s ease-in-out infinite}
+      @keyframes slide{0%{margin-left:-35%}100%{margin-left:100%}}
+      #bootOverlay .stage{font-weight:700;color:#ffd471;font-size:16px}
+      #bootOverlay .time{font-variant-numeric:tabular-nums;color:#9fb0c2;font-size:14px}
+      #bootOverlay .note{color:#6f8093;font-size:12px;max-width:420px;text-align:center;padding:0 16px}
+      #loading{display:none!important}
+    </style>
+    <script>
+    (function(){
+      // Информативный экран загрузки вместо голого спиннера BoxedWine.
+      var t0 = Date.now();
+      var phase = 'download';           // download -> boot -> done
+      var bootStart = 0;
+      var EXPECT_BOOT = 30;             // ожидаемое время запуска среды (с), для оценки
+      var lastStage = '';
+      window.__boot = { seen:{} };
+
+      function mark(text){
+        if(!text) return;
+        if(text.indexOf('Loaded boxedwine.zip')>=0 || text.indexOf('Mounted ')>=0){
+          if(phase==='download'){ phase='boot'; bootStart=Date.now(); }
+        }
+        if(text.indexOf('Launching ')>=0){ if(phase==='download'){phase='boot'; bootStart=Date.now();} window.__boot.seen.launch=1; }
+        if(text.indexOf('Showing Window')>=0){ phase='done'; }
+      }
+      // Перехватываем вывод эмулятора (идёт через console.log)
+      var _log = console.log;
+      console.log = function(){ try{ mark(Array.prototype.join.call(arguments,' ')); }catch(e){} return _log.apply(console, arguments); };
+
+      // Перехватываем статус загрузки файлов (Downloading/Preparing) — ждём появления Module
+      var si = setInterval(function(){
+        if(window.Module && Module.setStatus && !Module.setStatus.__wrapped){
+          var _s = Module.setStatus;
+          Module.setStatus = function(txt){ window.__boot.status = txt; return _s.apply(Module, arguments); };
+          Module.setStatus.__wrapped = true;
+          clearInterval(si);
+        }
+      }, 100);
+
+      function fmt(s){ s=Math.max(0,Math.round(s)); return s+' с'; }
+
+      document.addEventListener('DOMContentLoaded', function(){
+        var ov = document.createElement('div');
+        ov.id='bootOverlay';
+        ov.innerHTML =
+          '<div class="ball"></div>'+
+          '<div class="bt">Soccer Pinball ’98</div>'+
+          '<div class="track" id="boTrack"><div class="bar" id="boBar"></div></div>'+
+          '<div class="stage" id="boStage">Подготовка…</div>'+
+          '<div class="time" id="boTime"></div>'+
+          '<div class="note" id="boNote">Первый запуск идёт дольше — поднимается Windows-среда. Дальше будет быстрее.</div>';
+        document.body.appendChild(ov);
+        var track=document.getElementById('boTrack'), bar=document.getElementById('boBar'),
+            stage=document.getElementById('boStage'), time=document.getElementById('boTime');
+
+        var iv = setInterval(function(){
+          var elapsed = (Date.now()-t0)/1000;
+          if(phase==='download'){
+            var st = (window.__boot.status||'').toLowerCase();
+            track.classList.add('indet');
+            stage.textContent = st.indexOf('prepar')>=0 ? 'Подготовка файлов…' : 'Загрузка файлов движка…';
+            time.textContent = 'Прошло '+fmt(elapsed);
+          } else if(phase==='boot'){
+            track.classList.remove('indet');
+            var be = (Date.now()-bootStart)/1000;
+            var pct = Math.min(96, be/EXPECT_BOOT*100);
+            bar.style.width = pct.toFixed(0)+'%';
+            stage.textContent = window.__boot.seen.launch ? 'Запуск игры…' : 'Запуск Windows-среды…';
+            var left = EXPECT_BOOT - be;
+            time.textContent = left>1 ? ('осталось ≈'+fmt(left)) : 'почти готово…';
+          } else { // done
+            track.classList.remove('indet');
+            bar.style.width='100%';
+            stage.textContent='Готово!';
+            time.textContent='';
+            clearInterval(iv);
+            var el=document.getElementById('bootOverlay');
+            el.classList.add('hide');
+            setTimeout(function(){ if(el&&el.parentNode) el.parentNode.removeChild(el); }, 700);
+          }
+        }, 250);
+      });
+    })();
+    </script>
   </head>
   <body>
   <div id="loading">
